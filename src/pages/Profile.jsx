@@ -2,17 +2,20 @@ import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import {
   User, Mail, Phone, Shield,
-  Calendar, Camera, Loader, Trash2
+  Calendar, Camera, Loader, Trash2, ArrowUpCircle
 } from 'lucide-react';
 
 const BACKEND_URL = 'http://localhost:8080';
 
 const Profile = () => {
-  const { user, isAdmin, isProvider, isCustomer, login, token } = useAuth();
+  const { user, isAdmin, isProvider, isCustomer, login, logout, token } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);  // ← new
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();  // ← new
 
   const getPhotoUrl = () => {
     if (user?.profilePhoto) {
@@ -34,12 +37,9 @@ const Profile = () => {
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-
-      // Update user in context
       const updatedUser = response.data.data;
       login(updatedUser, token);
       toast.success('Profile photo updated! 📸');
-
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed!');
     } finally {
@@ -59,6 +59,25 @@ const Profile = () => {
     }
   };
 
+  // ✅ NEW — upgrade handler
+  const handleUpgrade = async () => {
+    if (!window.confirm(
+      'Upgrade to Provider? You will be logged out and need to log in again.'
+    )) return;
+
+    setUpgrading(true);
+    try {
+      await api.put('/api/users/upgrade-to-provider');
+      toast.success('🎉 Upgraded to Provider! Please log in again.');
+      logout();
+      navigate('/login');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Upgrade failed!');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   const getRoleBadge = () => {
     if (isAdmin) return 'bg-red-100 text-red-600 border-red-200';
     if (isProvider) return 'bg-green-100 text-green-600 border-green-200';
@@ -70,6 +89,7 @@ const Profile = () => {
     if (isProvider) return 'You can create and manage your services';
     return 'You can browse and book services';
   };
+  
 
   const InfoRow = ({ icon, label, value }) => (
     <div className="flex items-center gap-4 py-4 border-b
@@ -99,36 +119,29 @@ const Profile = () => {
         </h1>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-2xl shadow-sm
-          overflow-hidden mb-5">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
 
           {/* Cover */}
-          <div className="bg-gradient-to-r from-blue-600
-            to-indigo-600 h-24" />
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-24" />
 
           {/* Avatar + Name */}
           <div className="px-6 pb-6">
             <div className="flex flex-col sm:flex-row
-  sm:items-end sm:justify-between
-  gap-4 -mt-10 mb-4">
+              sm:items-end sm:justify-between gap-4 -mt-10 mb-4">
 
-              {/* Avatar with upload */}
+              {/* Avatar */}
               <div className="relative">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full
                   border-4 border-white shadow-md overflow-hidden
                   flex items-center justify-center">
                   {getPhotoUrl() ? (
-                    <img
-                      src={getPhotoUrl()}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={getPhotoUrl()} alt="Profile"
+                      className="w-full h-full object-cover" />
                   ) : (
                     <User className="text-blue-600" size={36} />
                   )}
                 </div>
 
-                {/* Upload button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
@@ -142,19 +155,13 @@ const Profile = () => {
                   }
                 </button>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                />
+                <input ref={fileInputRef} type="file" accept="image/*"
+                  onChange={handlePhotoUpload} className="hidden" />
               </div>
 
               <div className="flex items-center gap-2">
                 {user?.profilePhoto && (
-                  <button
-                    onClick={handleDeletePhoto}
+                  <button onClick={handleDeletePhoto}
                     className="p-2 text-red-400 hover:text-red-600
                       hover:bg-red-50 rounded-lg transition">
                     <Trash2 size={16} />
@@ -167,13 +174,9 @@ const Profile = () => {
               </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-800">
-              {user?.name}
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-800">{user?.name}</h2>
             <p className="text-gray-500">@{user?.username}</p>
-            <p className="text-gray-400 text-sm mt-1">
-              {getRoleDescription()}
-            </p>
+            <p className="text-gray-400 text-sm mt-1">{getRoleDescription()}</p>
             <p className="text-xs text-gray-400 mt-1">
               📸 Click the camera icon to update photo
             </p>
@@ -185,41 +188,21 @@ const Profile = () => {
           <h3 className="text-lg font-bold text-gray-800 mb-2">
             Account Information
           </h3>
-          <InfoRow
-            icon={<User className="text-blue-500" size={18} />}
-            label="Full Name"
-            value={user?.name}
-          />
-          <InfoRow
-            icon={<span className="text-blue-500 font-bold text-sm">
-              @
-            </span>}
-            label="Username"
-            value={user?.username}
-          />
-          <InfoRow
-            icon={<Mail className="text-blue-500" size={18} />}
-            label="Email"
-            value={user?.email}
-          />
-          <InfoRow
-            icon={<Phone className="text-blue-500" size={18} />}
-            label="Phone"
-            value={user?.phone}
-          />
-          <InfoRow
-            icon={<Shield className="text-blue-500" size={18} />}
-            label="Role"
-            value={user?.role}
-          />
-          <InfoRow
-            icon={<Calendar className="text-blue-500" size={18} />}
+          <InfoRow icon={<User className="text-blue-500" size={18} />}
+            label="Full Name" value={user?.name} />
+          <InfoRow icon={<span className="text-blue-500 font-bold text-sm">@</span>}
+            label="Username" value={user?.username} />
+          <InfoRow icon={<Mail className="text-blue-500" size={18} />}
+            label="Email" value={user?.email} />
+          <InfoRow icon={<Phone className="text-blue-500" size={18} />}
+            label="Phone" value={user?.phone} />
+          <InfoRow icon={<Shield className="text-blue-500" size={18} />}
+            label="Role" value={user?.role} />
+          <InfoRow icon={<Calendar className="text-blue-500" size={18} />}
             label="Member Since"
             value={user?.createdAt
               ? new Date(user.createdAt).toLocaleDateString('en-IN', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
+                  year: 'numeric', month: 'long', day: 'numeric'
                 })
               : null}
           />
@@ -234,19 +217,18 @@ const Profile = () => {
           ].map((stat) => (
             <div key={stat.label}
               className="bg-white rounded-2xl shadow-sm p-4 text-center">
-              <p className="text-lg font-bold text-blue-600">
-                {stat.value}
-              </p>
+              <p className="text-lg font-bold text-blue-600">{stat.value}</p>
               <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Role Card */}
+        {/* ✅ Role Card — upgrade button is RIGHT HERE inside isCustomer block */}
         <div className={`rounded-2xl p-5 border
           ${isAdmin ? 'bg-red-50 border-red-200' :
             isProvider ? 'bg-green-50 border-green-200' :
             'bg-blue-50 border-blue-200'}`}>
+
           <div className="flex items-center gap-3">
             <Shield
               className={isAdmin ? 'text-red-500' :
@@ -268,11 +250,29 @@ const Profile = () => {
               </p>
             </div>
           </div>
+
+          {/* ✅ UPGRADE BUTTON — only shown to CUSTOMER */}
           {isCustomer && (
-            <p className="text-blue-600 text-sm mt-3">
-              💡 Want to offer services? Contact admin to upgrade.
-            </p>
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <p className="text-blue-600 text-sm mb-3">
+                💡 Want to offer services? Upgrade your account instantly.
+              </p>
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="flex items-center gap-2 bg-green-600 text-white
+                  px-5 py-2.5 rounded-xl text-sm font-semibold
+                  hover:bg-green-700 transition disabled:opacity-50
+                  disabled:cursor-not-allowed">
+                {upgrading
+                  ? <Loader size={16} className="animate-spin" />
+                  : <ArrowUpCircle size={16} />
+                }
+                {upgrading ? 'Upgrading...' : 'Upgrade to Provider'}
+              </button>
+            </div>
           )}
+
         </div>
 
       </div>

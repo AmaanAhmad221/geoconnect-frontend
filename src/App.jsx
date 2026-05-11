@@ -12,6 +12,9 @@ import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
+import ProviderDashboard from './pages/ProviderDashboard';
+import CreateService from './pages/CreateService';
+import EditService from './pages/EditService'; 
 
 function App() {
   return (
@@ -38,6 +41,21 @@ function App() {
               <Profile />
             </ProtectedRoute>
           } />
+          <Route path="/provider-dashboard" element={
+  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+    <Route path="/edit-service/:id" element={    // ← add this
+  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+    <EditService />
+  </ProtectedRoute>
+} />
+    <ProviderDashboard />
+  </ProtectedRoute>
+} />
+<Route path="/create-service" element={
+  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+    <CreateService />
+  </ProtectedRoute>
+} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
