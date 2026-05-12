@@ -1,4 +1,4 @@
-import axios from 'axios';
+giimport axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -9,7 +9,7 @@ if (!API_BASE_URL) {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
+  headers: {  
     'Content-Type': 'application/json',
   },
   timeout: 15000, // ✅ 15 sec timeout — important for Render free tier wake-up
