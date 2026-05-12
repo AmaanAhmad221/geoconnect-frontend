@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  Search, MapPin, Filter, Star,
+  Search, MapPin, Filter,
   ChevronLeft, ChevronRight, Loader
 } from 'lucide-react';
 
@@ -15,15 +15,12 @@ const CATEGORIES = [
 
 const ServiceCard = ({ service }) => (
   <Link
-  to={`/services/${service.id}`}
-  className="group bg-white rounded-3xl border border-gray-100
-  p-5 sm:p-6 flex flex-col gap-4
-  shadow-sm hover:shadow-2xl hover:-translate-y-2
-  transition-all duration-300 cursor-pointer
-  hover:border-blue-100"
->
-
-    {/* Header */}
+    to={`/services/${service.id}`}
+    className="group bg-white rounded-3xl border border-gray-100
+    p-5 sm:p-6 flex flex-col gap-4 shadow-sm
+    hover:shadow-2xl hover:-translate-y-2
+    transition-all duration-300 cursor-pointer hover:border-blue-100"
+  >
     <div className="flex justify-between items-start">
       <div>
         <h3 className="font-bold text-gray-800 text-lg leading-tight">
@@ -31,7 +28,7 @@ const ServiceCard = ({ service }) => (
         </h3>
         <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5
           rounded-full font-medium mt-1 inline-block">
-          {service.category?.replace('_', ' ')}
+          {service.category?.replace(/_/g, ' ')}  {/* ✅ fix — replace ALL underscores */}
         </span>
       </div>
       <div className="text-right">
@@ -41,17 +38,15 @@ const ServiceCard = ({ service }) => (
       </div>
     </div>
 
-    {/* Description */}
     <p className="text-gray-500 text-sm line-clamp-2">
       {service.description}
     </p>
 
-    {/* Footer */}
     <div className="flex items-center justify-between mt-auto pt-2
       border-t border-gray-100">
       <div className="flex items-center gap-1 text-gray-500 text-sm">
         <MapPin size={14} />
-        <span>{service.city}, {service.area}</span>
+        <span className="capitalize">{service.city}, {service.area}</span> {/* ✅ capitalize city/area */}
       </div>
       <div className="text-sm text-gray-500">
         by <span className="font-medium text-gray-700">
@@ -69,10 +64,13 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const rawCategory = searchParams.get('category') || 'ALL';
-const [selectedCategory, setSelectedCategory] = useState(
-  rawCategory.replace(/ /g, '_').toUpperCase()
-);
+
+  // ✅ fix — sanitize URL param properly
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    const raw = searchParams.get('category') || 'ALL';
+    return raw.replace(/ /g, '_').toUpperCase();
+  });
+
   const [city, setCity] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -86,12 +84,11 @@ const [selectedCategory, setSelectedCategory] = useState(
       let response;
 
       if (keyword) {
-        // Search by keyword
         response = await api.get('/api/services/search', {
           params: { keyword, page, size: 9 }
         });
+
       } else if (city || selectedCategory !== 'ALL' || minPrice || maxPrice) {
-        // Filter
         response = await api.get('/api/services/filter', {
           params: {
             city: city || undefined,
@@ -100,24 +97,25 @@ const [selectedCategory, setSelectedCategory] = useState(
             maxPrice: maxPrice || undefined,
             page,
             size: 9,
-            sortBy: 'createdAt',   
+            sortBy: 'createdAt',  // ✅ fixed
             sortDir: 'desc'
           }
         });
+
       } else {
-        // Get all
         response = await api.get('/api/services', {
           params: { page, size: 9, sortBy: 'createdAt', sortDir: 'desc' }
         });
       }
 
       const data = response.data.data;
-      setServices(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setServices(data.content || []);
+      setTotalPages(data.totalPages || 0);
+      setTotalElements(data.totalElements || 0);
 
     } catch (error) {
       console.error('Error fetching services:', error);
+      setServices([]); // ✅ fix — clear on error so blank screen doesn't hang
     } finally {
       setLoading(false);
     }
@@ -144,7 +142,7 @@ const [selectedCategory, setSelectedCategory] = useState(
     setKeyword('');
     setSearchInput('');
     setPage(0);
-    fetchServices();
+    // ✅ fix — removed manual fetchServices() call, useEffect handles it
   };
 
   const handleReset = () => {
@@ -168,9 +166,8 @@ const [selectedCategory, setSelectedCategory] = useState(
           </h1>
 
           {/* Search Bar */}
-          <form
-  onSubmit={handleSearch}
-  className="flex flex-col sm:flex-row gap-3 mb-6">
+          <form onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2
                 text-gray-400" size={20} />
@@ -191,51 +188,42 @@ const [selectedCategory, setSelectedCategory] = useState(
             </button>
           </form>
 
-          {/* Filters Row */}
+          {/* Filters */}
           <div className="grid grid-cols-2 md:flex gap-3 items-end">
             <div>
               <label className="block text-xs text-gray-500 mb-1">City</label>
               <input
-                type="text"
-                value={city}
+                type="text" value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Indore"
+                placeholder="e.g. Pune"
                 className="w-full md:w-32 px-3 py-2 border border-gray-300
-rounded-lg text-sm focus:outline-none
-focus:ring-2 focus:ring-blue-500"
+                  rounded-lg text-sm focus:outline-none focus:ring-2
+                  focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                Min Price
-              </label>
+              <label className="block text-xs text-gray-500 mb-1">Min Price</label>
               <input
-                type="number"
-                value={minPrice}
+                type="number" value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 placeholder="₹0"
                 className="w-full md:w-32 px-3 py-2 border border-gray-300
-rounded-lg text-sm focus:outline-none
-focus:ring-2 focus:ring-blue-500"
+                  rounded-lg text-sm focus:outline-none focus:ring-2
+                  focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                Max Price
-              </label>
+              <label className="block text-xs text-gray-500 mb-1">Max Price</label>
               <input
-                type="number"
-                value={maxPrice}
+                type="number" value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="₹9999"
-                className="px-3 py-2 border border-gray-300 rounded-lg
-                  text-sm focus:outline-none focus:ring-2
-                  focus:ring-blue-500 w-24"
+                className="w-24 px-3 py-2 border border-gray-300
+                  rounded-lg text-sm focus:outline-none focus:ring-2
+                  focus:ring-blue-500"
               />
             </div>
-            <button
-  type="button"
-  onClick={handleFilter}
+            <button type="button" onClick={handleFilter}
               className="flex items-center gap-2 bg-gray-800 text-white
                 px-4 py-2 rounded-lg text-sm hover:bg-gray-900 transition">
               <Filter size={16} />
@@ -264,7 +252,7 @@ focus:ring-2 focus:ring-blue-500"
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
                 }`}>
-              {cat.replace('_', ' ')}
+              {cat.replace(/_/g, ' ')}  {/* ✅ replace ALL underscores */}
             </button>
           ))}
         </div>
@@ -276,11 +264,15 @@ focus:ring-2 focus:ring-blue-500"
               {totalElements}
             </span> services
             {keyword && ` for "${keyword}"`}
-            {selectedCategory !== 'ALL' && ` in ${selectedCategory}`}
+            {selectedCategory !== 'ALL' && (
+              <span> in <span className="font-semibold text-gray-800">
+                {selectedCategory.replace(/_/g, ' ')}
+              </span></span>
+            )}
           </p>
         )}
 
-        {/* Services Grid */}
+        {/* Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader className="animate-spin text-blue-600" size={40} />
@@ -320,11 +312,9 @@ focus:ring-2 focus:ring-blue-500"
               <ChevronLeft size={18} />
               Prev
             </button>
-
             <span className="text-gray-600 font-medium">
               Page {page + 1} of {totalPages}
             </span>
-
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
