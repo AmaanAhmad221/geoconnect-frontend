@@ -4,7 +4,6 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,7 +13,7 @@ import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
 import ProviderDashboard from './pages/ProviderDashboard';
 import CreateService from './pages/CreateService';
-import EditService from './pages/EditService'; 
+import EditService from './pages/EditService';
 
 function App() {
   return (
@@ -23,14 +22,15 @@ function App() {
         <Toaster position="top-right" />
         <Navbar />
         <Routes>
-          {/* Public Routes */}
+
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
 
-          {/* Protected Routes */}
+          {/* Protected — any logged in user */}
           <Route path="/my-bookings" element={
             <ProtectedRoute>
               <MyBookings />
@@ -41,21 +41,24 @@ function App() {
               <Profile />
             </ProtectedRoute>
           } />
+
+          {/* Protected — PROVIDER and ADMIN only */}
           <Route path="/provider-dashboard" element={
-  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
-    <Route path="/edit-service/:id" element={    // ← add this
-  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
-    <EditService />
-  </ProtectedRoute>
-} />
-    <ProviderDashboard />
-  </ProtectedRoute>
-} />
-<Route path="/create-service" element={
-  <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
-    <CreateService />
-  </ProtectedRoute>
-} />
+            <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+              <ProviderDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/create-service" element={
+            <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+              <CreateService />
+            </ProtectedRoute>
+          } />
+          <Route path="/edit-service/:id" element={
+            <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
+              <EditService />
+            </ProtectedRoute>
+          } />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
