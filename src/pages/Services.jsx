@@ -69,9 +69,10 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(
-    searchParams.get('category') || 'ALL'
-  );
+  const rawCategory = searchParams.get('category') || 'ALL';
+const [selectedCategory, setSelectedCategory] = useState(
+  rawCategory.replace(/ /g, '_').toUpperCase()
+);
   const [city, setCity] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -99,8 +100,8 @@ const Services = () => {
             maxPrice: maxPrice || undefined,
             page,
             size: 9,
-            sortBy: 'price',
-            sortDir: 'asc'
+            sortBy: 'createdAt',   
+            sortDir: 'desc'
           }
         });
       } else {

@@ -122,7 +122,7 @@ lg:grid-cols-6 gap-5">
             {categories.map((cat) => (
               <Link
   key={cat.name}
-  to={`/services?category=${cat.name.toUpperCase().replace(' ', '_')}`}
+  to={`/services?category=${cat.name.toUpperCase().replace(/ /g, '_')}`}
   className="group bg-white rounded-2xl border border-gray-100
   p-6 hover:shadow-xl hover:-translate-y-1
   transition duration-300
