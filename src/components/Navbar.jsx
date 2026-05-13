@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { MapPin, LogOut, Menu, X, LayoutDashboard } from "lucide-react";
+import { MapPin, LogOut, Menu, X, LayoutDashboard, Shield } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
