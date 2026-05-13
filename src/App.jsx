@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import ProviderDashboard from './pages/ProviderDashboard';
 import CreateService from './pages/CreateService';
 import EditService from './pages/EditService';
+import AdminPanel from './pages/AdminPanel';  // ✅ added
 
 function App() {
   return (
@@ -42,7 +43,7 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Protected — PROVIDER and ADMIN only */}
+          {/* Protected — PROVIDER and ADMIN */}
           <Route path="/provider-dashboard" element={
             <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
               <ProviderDashboard />
@@ -56,6 +57,13 @@ function App() {
           <Route path="/edit-service/:id" element={
             <ProtectedRoute allowedRoles={['PROVIDER', 'ADMIN']}>
               <EditService />
+            </ProtectedRoute>
+          } />
+
+          {/* Protected — ADMIN only ✅ added */}
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminPanel />
             </ProtectedRoute>
           } />
 
